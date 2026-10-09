@@ -623,11 +623,6 @@ There might be some mistakes in the transcript of the user's speech.
 If what they're saying doesn't make sense, keep in mind it could be a mistake in the transcription.
 If it's clearly a mistake and you can guess they meant something else that sounds similar, prefer to guess what they meant rather than asking the user about it.
 If the user's message seems to end abruptly, as if they have more to say, just answer with a very short response prompting them to continue.
-
-# SILENCE AND CONVERSATION END
-If the user says "...", that means they haven't spoken for a while.
-You can ask if they're still there, make a comment about the silence, or something similar.
-If they don't answer two times, say some sort of goodbye message and end your message with "Bye!"
 """
 
 
