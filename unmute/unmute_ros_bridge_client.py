@@ -10,7 +10,7 @@ from urllib.request import urlopen
 import numpy as np
 import websockets
 
-from unmute.eval_events import EventLog
+from unmute.eval_events import EventLog, robot_monitor_record
 from unmute.llm.llm_utils import (
     LLM_FREQUENCY_PENALTY,
     LLM_MAX_TOKENS,
@@ -507,6 +507,15 @@ async def run_bridge() -> None:
                                         "exec.cancelled",
                                         action=data.get("name"),
                                     )
+                                    continue
+
+                                # Robot status and action start/progress/finish
+                                # (monitor-only). Logged for the eval harness,
+                                # never forwarded: they are outside the trained
+                                # <action_result> contract.
+                                record = robot_monitor_record(data)
+                                if record is not None:
+                                    EVENTS.emit(record[0], **record[1])
                                     continue
 
                                 if msg_type == "browser.audio_opus":

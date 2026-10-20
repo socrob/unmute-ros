@@ -32,6 +32,42 @@ from typing import Any
 
 logger = logging.getLogger("UnmuteBridge.eval")
 
+# Monitor-only bus events from the action executor (towards_fd
+# ROBOT_INTEGRATION_PLAN sec. 3.3) -> their events.jsonl type. Logged here and
+# never forwarded to the remote backend: the LLM-facing <action_result> contract
+# has no room for them.
+ROBOT_MONITOR_EVENTS: dict[str, str] = {
+    "robot.system_status": "robot.status",
+    "robot.action_started": "action.started",
+    "robot.action_progress": "action.progress",
+    "robot.action_finished": "action.finished",
+}
+
+# Keys EventLog.emit owns: its `event` parameter and the record's own fields.
+_RESERVED_KEYS = frozenset({"event", "t_mono", "t_wall", "seq", "turn", "type"})
+
+
+def robot_monitor_record(data: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    """Map a robot monitor bus event to `(events.jsonl type, fields)`, else None.
+
+    The bus `type` is dropped and `name` becomes `action`, as for
+    `exec.cancelled`. A payload key that `EventLog.emit` owns is kept under a
+    `robot_` prefix so it can neither clash with `event` nor overwrite the record.
+    """
+    event = ROBOT_MONITOR_EVENTS.get(str(data.get("type")))
+    if event is None:
+        return None
+    fields: dict[str, Any] = {}
+    for key, value in data.items():
+        if key == "type":
+            continue
+        if key == "name":
+            key = "action"
+        elif key in _RESERVED_KEYS:
+            key = f"robot_{key}"
+        fields[key] = value
+    return event, fields
+
 
 class EventLog:
     """Append-only JSONL sink. Use `EventLog.from_env()`; call `emit()` freely."""
