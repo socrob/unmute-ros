@@ -125,7 +125,8 @@ class LLMTagPrinter:
                 continue
 
             candidates: tuple[str, ...] = (
-                _OPEN_TAGS + _CLOSE_TAGS if self._current_tag is None
+                _OPEN_TAGS + _CLOSE_TAGS
+                if self._current_tag is None
                 else (f"</{self._current_tag}>",)
             )
             chunk = buf[i:]

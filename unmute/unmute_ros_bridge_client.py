@@ -329,19 +329,24 @@ async def run_bridge() -> None:
                         send_lock = asyncio.Lock()
                         laptop_send_lock = asyncio.Lock()
 
+                        # The helpers below close over this connection's locks, flags and
+                        # queue. They are created here and awaited (asyncio.wait on
+                        # bridge_tasks) before the loop iterates, so they never see a later
+                        # connection's values: the `noqa: B023` marks are deliberate.
+
                         async def _send_to_unmute(payload: dict) -> None:
-                            async with send_lock:
+                            async with send_lock:  # noqa: B023
                                 await unmute_ws.send(json.dumps(payload))
 
                         async def _send_to_laptop(payload: dict) -> None:
-                            async with laptop_send_lock:
+                            async with laptop_send_lock:  # noqa: B023
                                 await laptop_ws.send(json.dumps(payload))
 
                         def _can_inject_action_result() -> bool:
                             return (
-                                not paused_session
-                                and not assistant_speaking
-                                and not user_speaking
+                                not paused_session  # noqa: B023
+                                and not assistant_speaking  # noqa: B023
+                                and not user_speaking  # noqa: B023
                             )
 
                         async def _send_action_result(content: str) -> None:
@@ -368,21 +373,21 @@ async def run_bridge() -> None:
                             if not _can_inject_action_result():
                                 return
                             try:
-                                content = action_result_queue.get_nowait()
+                                content = action_result_queue.get_nowait()  # noqa: B023
                             except asyncio.QueueEmpty:
                                 return
                             await _send_action_result(content)
 
                         def _queue_action_result(content: str) -> None:
                             try:
-                                action_result_queue.put_nowait(content)
+                                action_result_queue.put_nowait(content)  # noqa: B023
                             except asyncio.QueueFull:
                                 try:
-                                    _ = action_result_queue.get_nowait()
+                                    _ = action_result_queue.get_nowait()  # noqa: B023
                                 except asyncio.QueueEmpty:
                                     pass
                                 try:
-                                    action_result_queue.put_nowait(content)
+                                    action_result_queue.put_nowait(content)  # noqa: B023
                                 except asyncio.QueueFull:
                                     logger.warning(
                                         "Dropping action_result because queue is full."
@@ -715,7 +720,7 @@ async def run_bridge() -> None:
                                     data = json.loads(message)
                                     msg_type = data.get("type")
 
-                                    if paused_session:
+                                    if paused_session:  # noqa: B023
                                         if msg_type == "response.text.done":
                                             active_stream_speaker = None
                                             last_char_by_speaker["unmute"] = None
@@ -1012,7 +1017,7 @@ async def run_bridge() -> None:
 
                         reset_request: SessionResetRequested | None = None
                         unexpected_error: Exception | None = None
-                        for task, result in zip(bridge_tasks, results):
+                        for task, result in zip(bridge_tasks, results, strict=True):
                             if isinstance(result, SessionResetRequested):
                                 reset_request = result
                                 continue
@@ -1023,11 +1028,10 @@ async def run_bridge() -> None:
                                     unexpected_error = result
 
                         if reset_request is not None:
-                            exc = reset_request
                             logger.info(
                                 "Restart requested from %s (%s). Reconnecting Unmute websocket to reset session context.",
-                                exc.source,
-                                exc.reason,
+                                reset_request.source,
+                                reset_request.reason,
                             )
                             continue
 

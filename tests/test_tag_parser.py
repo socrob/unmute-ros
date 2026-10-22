@@ -117,12 +117,12 @@ def test_llm_tag_printer_all_four_tag_types():
 
 
 def test_llm_tag_printer_action_result_tag():
-    src = "<action_result>{\"status\":\"SUCCEEDED\"}</action_result>"
-    assert feed_all(src) == [("action_result", "{\"status\":\"SUCCEEDED\"}")]
+    src = '<action_result>{"status":"SUCCEEDED"}</action_result>'
+    assert feed_all(src) == [("action_result", '{"status":"SUCCEEDED"}')]
 
 
 def test_llm_tag_printer_split_across_feeds_open():
-    assert feed_all("<reas|oning>|abc|</think>") == [("think", "abc")]
+    assert feed_all("<thi|nk>|abc|</think>") == [("think", "abc")]
 
 
 def test_llm_tag_printer_split_across_feeds_close():
@@ -154,12 +154,7 @@ def test_llm_tag_printer_literal_lt_inside_tag_preserved():
 
 
 def test_llm_tag_printer_all_split_points_stable():
-    src = (
-        "<think>r</think>"
-        "<speech>hi</speech>"
-        "<plan>p</plan>"
-        "<exec>e</exec>"
-    )
+    src = "<think>r</think><speech>hi</speech><plan>p</plan><exec>e</exec>"
     expected = [("think", "r"), ("speech", "hi"), ("plan", "p"), ("exec", "e")]
     for cut in range(len(src) + 1):
         p = LLMTagPrinter()
