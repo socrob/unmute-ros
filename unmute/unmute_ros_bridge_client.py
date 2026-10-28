@@ -833,6 +833,21 @@ async def run_bridge() -> None:
                                         assistant_audio_seen = False
                                         _reset_tag_state("interrupted_by_vad")
                                         await _flush_action_results()
+                                    elif msg_type == "response.created":
+                                        # The backend only responds once it has
+                                        # ended the user's turn. When the last word
+                                        # lands after the pause, it interrupts its
+                                        # first attempt (speech_started) and responds
+                                        # again from the STT flush, which sends no
+                                        # speech_stopped: user_speaking would stay
+                                        # latched and hold every <action_result>
+                                        # until the next pause, where the backend
+                                        # drops it as arriving mid-response. From
+                                        # here the response itself is the gate: the
+                                        # backend also drops a tool message that
+                                        # arrives before the first delta.
+                                        user_speaking = False
+                                        assistant_speaking = True
                                     elif msg_type == "response.text.delta":
                                         if not turn_open:
                                             turn_open = True
