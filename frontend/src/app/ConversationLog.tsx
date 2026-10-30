@@ -122,6 +122,17 @@ const ConversationLog = ({ chatHistory }: ConversationLogProps) => {
     [chatHistory],
   );
 
+  // Open straight into fullscreen when the URL asks for it (?log=fullscreen),
+  // so a screen recording gets the same view every time without a click. Set
+  // from an effect, not useState's initialiser: reading window during render
+  // would not match the server-rendered markup.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("log") === "fullscreen") {
+      setIsFullscreen(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAutoScrollEnabled) return;
 
